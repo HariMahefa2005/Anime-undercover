@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#111827">
+<title>Anime Undercover</title>
+<style>
+:root{--bg:#0b1020;--panel:#151d32;--panel2:#1d2942;--txt:#f4f6fb;--muted:#aab5ca;--accent:#9b87ff;--pink:#ff6f91;--green:#4dd4a3;--gold:#ffd166}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#202b4b 0,#0b1020 55%);color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+main{max-width:620px;margin:auto;padding:20px 16px 36px}.brand{text-align:center;padding:12px 0 18px}.logo{font-size:38px}.brand h1{font-size:25px;margin:4px 0}.brand p{color:var(--muted);margin:0;font-size:13px;letter-spacing:1.5px}
+.card{background:linear-gradient(145deg,var(--panel),#11182a);border:1px solid #2c3958;border-radius:18px;padding:18px;margin:14px 0;box-shadow:0 12px 30px #0003}
+h2{font-size:19px;margin:0 0 12px}h3{margin:4px 0 10px}p{line-height:1.45}.muted{color:var(--muted)}label{display:block;color:#c8d1e3;font-size:13px;margin:12px 0 6px}
+input,select,textarea{width:100%;border:1px solid #3a496b;background:#0c1426;color:white;border-radius:11px;padding:13px;font-size:16px;outline:none}
+textarea{min-height:72px;resize:vertical}.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+button{border:0;border-radius:12px;padding:14px 16px;font-weight:750;font-size:15px;color:#111827;background:var(--accent);width:100%;margin-top:12px}
+button.secondary{background:#2b3855;color:#f5f7ff}button.danger{background:#ff718e;color:#240a13}button.green{background:var(--green)}
+button:disabled{opacity:.4}.hidden{display:none!important}.pill{display:inline-block;border:1px solid #465577;border-radius:999px;padding:5px 10px;font-size:12px;color:#c5d0e4;margin:3px}
+.big{font-size:26px;font-weight:850}.secret{background:#10192c;border:1px dashed #65749a;padding:22px;border-radius:15px;text-align:center;margin:14px 0}
+.secret .character{font-size:26px;font-weight:850;margin:12px 0;color:var(--gold)}
+.notice{border-left:3px solid var(--gold);padding:8px 12px;background:#2a2630;border-radius:6px;color:#f4dca1;font-size:13px}
+.player{padding:12px;background:#1b2740;border-radius:11px;margin:8px 0;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.player small{color:var(--muted)}.status{font-size:12px;color:var(--muted)}.center{text-align:center}.spacer{height:6px}
+hr{border:0;border-top:1px solid #2c3958;margin:16px 0}
+footer{text-align:center;color:#7f8ba5;font-size:11px;margin-top:22px}
+</style>
+</head>
+<body>
+<main>
+<header class="brand"><div class="logo">🎴</div><h1>ANIME UNDERCOVER</h1><p>MULTIVERSE EDITION</p></header>
+<section id="setup" class="card">
+<h2>Nouvelle partie</h2>
+<p class="muted">Un téléphone, plusieurs joueurs. Passez-le à chacun pour découvrir son rôle en secret.</p>
+<label>Nombre de joueurs (3 à 20)</label><input id="count" type="number" min="3" max="20" value="6">
+<div class="row">
+<div><label>Undercovers</label><select id="under"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
+<div><label>Mr White</label><select id="white"><option selected>1</option><option>0</option><option>2</option><option>3</option></select></div>
+</div>
+<label>Noms des joueurs (un par ligne)</label><textarea id="names" placeholder="Joueur 1&#10;Joueur 2&#10;Joueur 3&#10;...">Joueur 1
+Joueur 2
+Joueur 3
+Joueur 4
+Joueur 5
+Joueur 6</textarea>
+<div class="notice">Conseil : prévoyez au moins 3 civils. Les rôles sont distribués aléatoirement.</div>
+<button onclick="prepare()">Distribuer les rôles</button>
+</section>
+
+<section id="reveal" class="card hidden">
+<div class="status" id="revealProgress"></div><h2 id="revealTitle">Passe le téléphone</h2>
+<p class="muted center" id="revealText">Seul le joueur indiqué doit regarder l'écran.</p>
+<div class="secret hidden" id="secretBox"><div class="status">TON PERSONNAGE</div><div class="character" id="character"></div><div class="pill" id="rolePill"></div></div>
+<button id="showRoleBtn" onclick="showRole()">Voir mon rôle</button>
+<button id="hideRoleBtn" class="secondary hidden" onclick="nextReveal()">Masquer et passer</button>
+</section>
+
+<section id="round" class="card hidden">
+<div class="status" id="roundStatus"></div><h2>Tour de discussion</h2>
+<p class="muted">Chacun donne un indice à voix haute. Les joueurs éliminés ne participent plus.</p>
+<div id="activePlayers"></div>
+<label>Notes de discussion (facultatif)</label><textarea id="notes" placeholder="Vous pouvez noter les indices ici..."></textarea>
+<button onclick="startVote()">Passer au vote</button>
+</section>
+
+<section id="vote" class="card hidden">
+<div class="status" id="voteStatus"></div><h2>Vote secret</h2>
+<p id="votePrompt" class="muted"></p>
+<label>Qui veux-tu éliminer ?</label><select id="voteChoice"></select>
+<button onclick="submitVote()">Confirmer mon vote</button>
+<div class="notice">Ne montrez pas votre choix aux autres joueurs. Chaque joueur vote à son tour.</div>
+</section>
+
+<section id="result" class="card hidden">
+<h2 id="resultTitle">Résultat du vote</h2><div id="resultBody"></div>
+<button id="resultButton" onclick="continueAfterResult()">Continuer</button>
+</section>
+
+<section id="guess" class="card hidden">
+<h2>Dernière chance de Mr White</h2>
+<p id="guessPlayer" class="muted"></p>
+<p>Tu as été découvert. Si tu devines le personnage des civils, tu remportes la partie.</p>
+<label>Quel est le personnage des civils ?</label><input id="guessInput" placeholder="Nom du personnage">
+<button onclick="submitGuess()">Valider ma réponse</button>
+</section>
+
+<section id="end" class="card hidden center">
+<div style="font-size:42px">🏆</div><h2 id="winnerTitle">Victoire !</h2><p id="winnerText"></p>
+<button onclick="location.reload()">Nouvelle partie</button>
+</section>
+<footer>Anime Undercover • Jeu local sur un seul appareil</footer>
+</main>
+<script>
+const pairs = [
+["Gojo Satoru","Killua Zoldyck","Prodiges aux cheveux clairs et capacités hors normes."],
+["Megumi Fushiguro","Shikamaru Nara","Stratégie et techniques liées à l'ombre."],
+["Hidan","Ban","Survivants presque impossibles à tuer."],
+["Itachi Uchiha","Lelouch Lamperouge","Double vie, stratégie et sacrifices."],
+["Escanor","All Might","Force écrasante et présence héroïque."],
+["Sukuna","Muzan Kibutsuji","Antagonistes terrifiants qui dominent leurs univers."],
+["Naruto Uzumaki","Asta","Rejetés, déterminés et portés par un grand rêve."],
+["Light Yagami","Johan Liebert","Manipulateurs brillants et dangereux."],
+["Roronoa Zoro","Kenpachi Zaraki","Combattants qui vivent pour le combat."],
+["Kakashi Hatake","Satoru Gojo","Professeurs surpuissants aux yeux particuliers."],
+["Monkey D. Luffy","Son Goku","Héros joyeux, puissants et avides d'aventure."],
+["Vegeta","Sasuke Uchiha","Rivaux fiers, tourmentés par leur passé."],
+["Levi Ackerman","Mikasa Ackerman","Combattants d'élite, rapides et redoutables."],
+["Tanjiro Kamado","Yuji Itadori","Héros empathiques plongés dans le surnaturel."],
+["Nezuko Kamado","Power","Personnages féminins liés à des transformations monstrueuses."],
+["Eren Yeager","Kaneki Ken","Transformations, identité et conflit intérieur."],
+["Rukia Kuchiki","Shinobu Kocho","Combattantes élégantes utilisant des techniques particulières."],
+["Ichigo Kurosaki","Yusuke Urameshi","Adolescents devenus combattants du monde spirituel."],
+["Natsu Dragneel","Portgas D. Ace","Pouvoirs de feu et attachement profond à leurs proches."],
+["Erza Scarlet","Saber","Guerrières réputées pour leur maîtrise des armes."],
+["Shoto Todoroki","Gray Fullbuster","Pouvoirs associés au froid et à la glace."],
+["Deku (Izuku Midoriya)","Simon (Gurren Lagann)","Héros qui grandissent en dépassant leurs limites."],
+["Saitama","Mash Burnedead","Force physique absurde et humour décalé."],
+["Anya Forger","Kanna Kamui","Petites filles adorables aux capacités extraordinaires."],
+["Senku Ishigami","Bulma","Génies scientifiques qui font avancer leur équipe."],
+["Roy Mustang","Reigen Arataka","Charisme, bluff et capacité à diriger les autres."],
+["Hisoka","Doflamingo","Antagonistes charismatiques, cruels et manipulateurs."],
+["Might Guy","Rock Lee","Discipline extrême et puissance fondée sur l'effort."],
+["Yuno","Trafalgar Law","Calmes, talentueux et très puissants."],
+["Rimuru Tempest","Ainz Ooal Gown","Êtres puissants à la tête d'une communauté."]
+];
+let players=[], pair=null, revealIndex=0, voteIndex=0, votes=[], pendingElim=null, roundNo=1, winner=null, lastElim=null;
+function show(id){["setup","reveal","round","vote","result","guess","end"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id));}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function prepare(){
+ let n=Math.max(3,Math.min(20,parseInt(document.getElementById("count").value)||3));
+ let names=document.getElementById("names").value.split("\n").map(x=>x.trim()).filter(Boolean);
+ while(names.length<n) names.push("Joueur "+(names.length+1));
+ names=names.slice(0,n);
+ let u=+document.getElementById("under").value,w=+document.getElementById("white").value;
+ if(u+w>=n){alert("Il faut garder au moins un civil. Réduis le nombre d'Undercovers ou de Mr White.");return;}
+ pair=pairs[Math.floor(Math.random()*pairs.length)];
+ let roles=shuffle([...Array(u).fill("under"),...Array(w).fill("white"),...Array(n-u-w).fill("civil")]);
+ players=names.map((name,i)=>({name,role:roles[i],alive:true,seen:false}));
+ // Randomly decide which character is the civilian word.
+ if(Math.random()<.5) pair={...pair, civilian:pair[0], under:pair[1]}; else pair={...pair,civilian:pair[1],under:pair[0]};
+ revealIndex=0;roundNo=1;votes=[];winner=null;
+ document.getElementById("revealProgress").textContent="Distribution • joueur 1 / "+players.length;
+ document.getElementById("revealTitle").textContent="Passe le téléphone à "+players[0].name;
+ document.getElementById("revealText").textContent="Assure-toi que personne d'autre ne regarde l'écran.";
+ document.getElementById("secretBox").classList.add("hidden");
+ document.getElementById("showRoleBtn").classList.remove("hidden");document.getElementById("hideRoleBtn").classList.add("hidden");
+ show("reveal");
+}
+function showRole(){
+ let p=players[revealIndex];let word=p.role==="civil"?pair.civilian:p.role==="under"?pair.under:"Aucun personnage";
+ document.getElementById("character").textContent=word;
+ document.getElementById("rolePill").textContent=p.role==="civil"?"CIVIL":p.role==="under"?"UNDERCOVER":"MR WHITE";
+ document.getElementById("rolePill").style.color=p.role==="civil"?"#4dd4a3":p.role==="under"?"#ff9aaf":"#ffd166";
+ document.getElementById("secretBox").classList.remove("hidden");
+ document.getElementById("showRoleBtn").classList.add("hidden");document.getElementById("hideRoleBtn").classList.remove("hidden");
+}
+function nextReveal(){
+ revealIndex++;
+ if(revealIndex>=players.length){beginRound();return;}
+ document.getElementById("revealProgress").textContent="Distribution • joueur "+(revealIndex+1)+" / "+players.length;
+ document.getElementById("revealTitle").textContent="Passe le téléphone à "+players[revealIndex].name;
+ document.getElementById("secretBox").classList.add("hidden");
+ document.getElementById("showRoleBtn").classList.remove("hidden");document.getElementById("hideRoleBtn").classList.add("hidden");
+}
+function beginRound(){
+ let alive=players.filter(p=>p.alive);
+ document.getElementById("roundStatus").textContent="Manche "+roundNo+" • "+alive.length+" joueurs encore en jeu";
+ document.getElementById("activePlayers").innerHTML=alive.map(p=>`<div class="player"><span>${esc(p.name)}</span><small>En jeu</small></div>`).join("");
+ document.getElementById("notes").value="";
+ show("round");
+}
+function startVote(){
+ votes=[];voteIndex=0;
+ let alive=players.filter(p=>p.alive);
+ document.getElementById("voteStatus").textContent="Vote • joueur 1 / "+alive.length;
+ document.getElementById("votePrompt").textContent="Passe le téléphone à "+alive[0].name+". Choisis sans montrer ton vote.";
+ fillVoteOptions(alive[0]);
+ show("vote");
+}
+function fillVoteOptions(voter){
+ let select=document.getElementById("voteChoice");
+ select.innerHTML=players.filter(p=>p.alive&&p!==voter).map(p=>`<option value="${players.indexOf(p)}">${esc(p.name)}</option>`).join("");
+}
+function submitVote(){
+ let alive=players.filter(p=>p.alive), voter=alive[voteIndex];
+ let target=+document.getElementById("voteChoice").value;
+ if(!Number.isInteger(target)||!players[target]||!players[target].alive||players[target]===voter){alert("Choix invalide.");return;}
+ votes.push(target);voteIndex++;
+ if(voteIndex<alive.length){
+  let next=alive[voteIndex];document.getElementById("voteStatus").textContent="Vote • joueur "+(voteIndex+1)+" / "+alive.length;
+  document.getElementById("votePrompt").textContent="Passe le téléphone à "+next.name+". Ne regarde pas les votes précédents.";
+  fillVoteOptions(next);
+ }else tally();
+}
+function tally(){
+ document.getElementById("resultButton").onclick=continueAfterResult;
+ let counts={};votes.forEach(v=>counts[v]=(counts[v]||0)+1);
+ let max=Math.max(...Object.values(counts));let top=Object.keys(counts).filter(k=>counts[k]===max).map(Number);
+ let body=document.getElementById("resultBody");
+ if(top.length!==1){
+  pendingElim=null;
+  body.innerHTML=`<p class="big">Égalité !</p><p class="muted">Aucun joueur n'est éliminé. Une nouvelle manche commence.</p>`;
+ }else{
+  pendingElim=top[0];let p=players[pendingElim];p.alive=false;lastElim=p;
+  body.innerHTML=`<p class="big">${esc(p.name)} est éliminé(e).</p><p>Son rôle : <strong>${roleName(p.role)}</strong></p>`;
+ }
+ document.getElementById("resultTitle").textContent="Résultat du vote";
+ document.getElementById("resultButton").textContent="Continuer";
+ show("result");
+}
+function continueAfterResult(){
+ if(pendingElim!==null){
+  let p=players[pendingElim];
+  if(p.role==="white"){show("guess");document.getElementById("guessPlayer").textContent=p.name+", entre ta réponse. Les autres joueurs ne doivent pas t'aider.";return;}
+  let outcome=checkWinner();
+  if(outcome){finish(outcome);return;}
+ }
+ pendingElim=null;roundNo++;beginRound();
+}
+function submitGuess(){
+ let guess=document.getElementById("guessInput").value.trim().toLowerCase();
+ if(guess===pair.civilian.toLowerCase()){
+  finish("Mr White");
+ }else{
+  pendingElim=null;
+  let outcome=checkWinner();
+  if(outcome){finish(outcome);return;}
+  document.getElementById("resultTitle").textContent="Mauvaise réponse";
+  document.getElementById("resultBody").innerHTML="<p>Mr White n'a pas trouvé le personnage. La partie continue.</p>";
+  document.getElementById("resultButton").textContent="Reprendre la partie";
+  document.getElementById("resultButton").onclick=continueAfterResult;
+  show("result");
+ }
+}
+function checkWinner(){
+ let alive=players.filter(p=>p.alive), c=alive.filter(p=>p.role==="civil").length,u=alive.filter(p=>p.role==="under").length,w=alive.filter(p=>p.role==="white").length;
+ if(u===0&&w===0)return "Civils";
+ if(u===0&&w>0&&c===0)return "Mr White";
+ if(u>0&&u>=c)return "Undercovers";
+ if(c===0&&w>0)return "Mr White";
+ return null;
+}
+function finish(team){
+ let title=team==="Civils"?"Victoire des civils !":team==="Undercovers"?"Victoire des Undercovers !":"Victoire de Mr White !";
+ let survivors=players.filter(p=>p.alive).map(p=>`${esc(p.name)} (${roleName(p.role)})`).join("<br>");
+ document.getElementById("winnerTitle").textContent=title;
+ document.getElementById("winnerText").innerHTML=`Personnage des civils : <strong>${esc(pair.civilian)}</strong><hr>Joueurs encore en jeu :<br>${survivors||"Aucun"}`;
+ show("end");
+}
+function roleName(r){return r==="civil"?"Civil":r==="under"?"Undercover":"Mr White";}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+</script>
+</body></html>
